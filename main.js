@@ -151,9 +151,10 @@ function loadJsonFile(filePath) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(content);
 
-    // Look for configuration in @copyloto
-    if (data['@copyloto']) {
-      config = data['@copyloto'];
+    // Look for configuration in @copyloto or copyloto_config
+    const autoConfig = data['@copyloto'] || data['copyloto_config'];
+    if (autoConfig) {
+      config = autoConfig;
       const arrayPath = config.array_path || 'items';
       items = data[arrayPath] || [];
       currentIndex = 0;
@@ -169,7 +170,7 @@ function loadJsonFile(filePath) {
       const availableArrays = [];
 
       for (const key of Object.keys(data)) {
-        if (key !== '@copyloto' && Array.isArray(data[key]) && data[key].length > 0) {
+        if (key !== '@copyloto' && key !== 'copyloto_config' && Array.isArray(data[key]) && data[key].length > 0) {
           const firstItem = data[key][0];
           const fields = (firstItem && typeof firstItem === 'object') ? Object.keys(firstItem) : [];
           availableArrays.push({
@@ -218,8 +219,7 @@ function applyUserConfig(userConfig) {
     copy_field: userConfig.copy_field,
     copy_fields: userConfig.copy_fields || (userConfig.copy_field ? [userConfig.copy_field] : []),
     auto_advance: userConfig.auto_advance || false,
-    color_field: userConfig.color_field || null,
-    color_rules: userConfig.color_rules || {},
+    color_rules: userConfig.color_rules || [],
     context_before: 2,
     context_after: 3
   };
@@ -380,9 +380,10 @@ ipcMain.handle('load-json-data', async (event, data) => {
 
 // Process JSON data (shared logic)
 function processJsonData(data) {
-  // Look for configuration in @copyloto
-  if (data['@copyloto']) {
-    config = data['@copyloto'];
+  // Look for configuration in @copyloto or copyloto_config
+  const autoConfig = data['@copyloto'] || data['copyloto_config'];
+  if (autoConfig) {
+    config = autoConfig;
     const arrayPath = config.array_path || 'items';
     items = data[arrayPath] || [];
     currentIndex = 0;
@@ -398,7 +399,7 @@ function processJsonData(data) {
     const availableArrays = [];
 
     for (const key of Object.keys(data)) {
-      if (key !== '@copyloto' && Array.isArray(data[key]) && data[key].length > 0) {
+      if (key !== '@copyloto' && key !== 'copyloto_config' && Array.isArray(data[key]) && data[key].length > 0) {
         const firstItem = data[key][0];
         const fields = (firstItem && typeof firstItem === 'object') ? Object.keys(firstItem) : [];
         availableArrays.push({
