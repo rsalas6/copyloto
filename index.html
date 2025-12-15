@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CopyLoto</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Minimal header -->
+    <div class="header">
+      <div class="drag-area">
+        <span class="app-title">CopyLoto</span>
+        <span class="counter" id="counter">0/0</span>
+      </div>
+      <div class="header-actions">
+        <button id="btn-load" class="btn-icon" title="Load JSON">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </button>
+        <button id="btn-settings" class="btn-icon" title="Settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <button id="btn-minimize" class="btn-icon btn-minimize" title="Minimize">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button id="btn-close" class="btn-icon btn-close" title="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Items list -->
+    <div class="items-list" id="items-list">
+      <div class="empty-state">
+        <p>Click <span class="icon-hint">↑</span> to load JSON</p>
+        <p class="shortcut-hint">Ctrl+↑↓ rows | Ctrl+←→ fields | Ctrl+Space</p>
+      </div>
+    </div>
+
+    <!-- Copy indicator -->
+    <div class="copy-indicator" id="copy-indicator" style="display: none;">
+      <div class="copy-current">
+        <span class="copy-current-value" id="copy-current-value">-</span>
+        <span class="copy-current-label" id="copy-current-label">1/1</span>
+      </div>
+      <div class="copy-next" id="copy-next">
+        <span class="copy-next-label">next:</span>
+        <span class="copy-next-value" id="copy-next-value">-</span>
+      </div>
+    </div>
+
+    <!-- Load modal -->
+    <div class="modal" id="load-modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Load JSON</h3>
+          <button id="btn-close-load-modal" class="btn-icon-small">×</button>
+        </div>
+        <div class="modal-body">
+          <button id="btn-open-file" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            Open File
+          </button>
+          <div class="divider"><span>or</span></div>
+          <textarea id="json-paste-area" placeholder="Paste JSON here..."></textarea>
+          <button id="btn-paste-json" class="btn-secondary">Load from paste</button>
+          <button id="btn-cancel-load" class="btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config modal -->
+    <div class="modal" id="config-modal" style="display: none;">
+      <div class="modal-content">
+        <h3>Configure Display</h3>
+
+        <div class="modal-section">
+          <label>Data array:</label>
+          <select id="array-select"></select>
+        </div>
+
+        <div class="modal-section">
+          <label>Fields (Show | Copy | Order):</label>
+          <div class="fields-table-container">
+            <table class="fields-table" id="modal-fields-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Show</th>
+                  <th>Copy</th>
+                  <th>#</th>
+                </tr>
+              </thead>
+              <tbody id="modal-fields-table-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-apply-config" class="btn-primary">Apply</button>
+          <button id="btn-cancel-config" class="btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings panel -->
+    <div class="modal" id="settings-panel" style="display: none;">
+      <div class="modal-content settings-content">
+        <div class="modal-header">
+          <h3>Settings</h3>
+          <button id="btn-close-settings" class="btn-icon-small">×</button>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-option">
+            <input type="checkbox" id="dark-mode-check">
+            <label for="dark-mode-check">Dark mode</label>
+          </div>
+          <div class="settings-option">
+            <input type="checkbox" id="quick-next-check" checked>
+            <label for="quick-next-check">Ctrl+Space advances</label>
+          </div>
+          <div class="settings-option">
+            <input type="checkbox" id="auto-advance-check">
+            <label for="auto-advance-check">Auto-advance after sequence</label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <label>Appearance:</label>
+          <div class="appearance-row">
+            <span class="appearance-label">Opacity</span>
+            <div class="slider-row">
+              <input type="range" id="opacity-slider" min="20" max="100" value="90">
+              <span id="opacity-value">90%</span>
+            </div>
+          </div>
+          <div class="appearance-row">
+            <span class="appearance-label">Font size</span>
+            <div class="font-control">
+              <button id="btn-font-down" class="btn-sm">A-</button>
+              <span id="font-size-value">14</span>
+              <button id="btn-font-up" class="btn-sm">A+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section" id="preview-section" style="display: none;">
+          <label>Preview:</label>
+          <div class="item-preview" id="item-preview"></div>
+        </div>
+
+        <div class="settings-section" id="fields-settings" style="display: none;">
+          <label>Fields (Show | Copy):</label>
+          <div class="fields-table-container">
+            <table class="fields-table" id="fields-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Show</th>
+                  <th>Copy</th>
+                  <th>#</th>
+                </tr>
+              </thead>
+              <tbody id="fields-table-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="settings-section" id="color-settings" style="display: none;">
+          <label>Highlight when:</label>
+          <div class="color-config">
+            <select id="color-field-select">
+              <option value="">-- Off --</option>
+            </select>
+            <select id="color-operator-select">
+              <option value="==">=</option>
+              <option value="!=">≠</option>
+              <option value="contains">has</option>
+            </select>
+            <input type="text" id="color-value-input" placeholder="value">
+            <input type="color" id="color-picker" value="#ff6b6b">
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button id="btn-save-settings" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

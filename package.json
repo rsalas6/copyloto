@@ -1,0 +1,33 @@
+{
+  "name": "copyloto",
+  "version": "1.0.0",
+  "description": "Overlay app for sequential JSON data copying",
+  "main": "main.js",
+  "bin": {
+    "copyloto": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "electron",
+    "clipboard",
+    "overlay",
+    "json",
+    "copy",
+    "sequential",
+    "productivity"
+  ],
+  "author": "Roberto Salas",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rsalas6/copyloto"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "electron": "^28.0.0"
+  }
+}
