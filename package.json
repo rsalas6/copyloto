@@ -1,6 +1,6 @@
 {
   "name": "copyloto",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Overlay app for sequential JSON data copying",
   "main": "main.js",
   "bin": {
