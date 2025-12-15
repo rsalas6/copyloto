@@ -4,16 +4,13 @@
     "display_fields": ["nombre", "sku", "categoria"],
     "copy_fields": ["sku", "precio", "descripcion"],
     "auto_advance": true,
-    "context_before": 2,
-    "context_after": 3,
-    "color_field": "categoria",
-    "color_rules": {
-      "Electrónica": "#4a9eff",
-      "Accesorios": "#50c878",
-      "Audio": "#ff6b6b",
-      "Almacenamiento": "#ffa500",
-      "Componentes": "#ba55d3"
-    }
+    "color_rules": [
+      { "field": "categoria", "operator": "==", "value": "Electrónica", "color": "#4a9eff" },
+      { "field": "categoria", "operator": "==", "value": "Accesorios", "color": "#50c878" },
+      { "field": "categoria", "operator": "==", "value": "Audio", "color": "#ff6b6b" },
+      { "field": "categoria", "operator": "==", "value": "Almacenamiento", "color": "#ffa500" },
+      { "field": "categoria", "operator": "==", "value": "Componentes", "color": "#ba55d3" }
+    ]
   },
   "productos": [
     {

@@ -9,23 +9,27 @@ Use this prompt with any LLM to generate JSON files compatible with CopyLoto.
 ```
 Generate a JSON file for CopyLoto with the following structure:
 
-1. Include a "copyloto_config" object with:
+1. Include a "@copyloto" object with:
    - "array_path": the key name of the data array
-   - "display_fields": array of field names to show in the UI
+   - "display_fields": array of field names to show in the UI (in order)
    - "copy_fields": array of field names to copy (in sequence order)
+   - "color_rules": (optional) array of rules to highlight rows by color
 
 2. Include the data array with your items
 
 Example format:
 {
-  "copyloto_config": {
+  "@copyloto": {
     "array_path": "items",
-    "display_fields": ["label"],
-    "copy_fields": ["value1", "value2"]
+    "display_fields": ["label", "status"],
+    "copy_fields": ["value1", "value2"],
+    "color_rules": [
+      { "field": "status", "operator": "==", "value": "urgent", "color": "#ff6b6b" }
+    ]
   },
   "items": [
-    { "label": "Item 1", "value1": "abc", "value2": "123" },
-    { "label": "Item 2", "value1": "def", "value2": "456" }
+    { "label": "Item 1", "value1": "abc", "value2": "123", "status": "normal" },
+    { "label": "Item 2", "value1": "def", "value2": "456", "status": "urgent" }
   ]
 }
 
@@ -46,7 +50,7 @@ Generate a JSON for: A list of 5 test users with username, email, and password
 **Output:**
 ```json
 {
-  "copyloto_config": {
+  "@copyloto": {
     "array_path": "users",
     "display_fields": ["username"],
     "copy_fields": ["email", "password"]
@@ -68,7 +72,7 @@ Generate a JSON for: Product entries with name, SKU, price, and description to f
 **Output:**
 ```json
 {
-  "copyloto_config": {
+  "@copyloto": {
     "array_path": "products",
     "display_fields": ["name", "sku"],
     "copy_fields": ["name", "sku", "price", "description"]
@@ -94,7 +98,7 @@ Generate a JSON for: Search queries to test in a search engine, showing the cate
 **Output:**
 ```json
 {
-  "copyloto_config": {
+  "@copyloto": {
     "array_path": "searches",
     "display_fields": ["category"],
     "copy_fields": ["query"]
@@ -110,7 +114,8 @@ Generate a JSON for: Search queries to test in a search engine, showing the cate
 
 ## Tips
 
-- **display_fields**: Choose fields that help you identify each row at a glance
+- **display_fields**: Choose fields that help you identify each row at a glance (order matters)
 - **copy_fields**: Order them in the sequence you'll paste them (use Ctrl+Space to advance)
+- **color_rules**: Use to highlight important rows (operators: `==`, `!=`, `contains`)
 - Keep field names simple and consistent
 - The config is optional - you can always configure manually in the app
