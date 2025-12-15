@@ -50,6 +50,30 @@ Works with any JSON array:
 
 Or nested structures - select the array path in settings.
 
+### Auto-configuration
+
+Embed a `copyloto_config` object in your JSON to auto-configure on load:
+
+```json
+{
+  "copyloto_config": {
+    "array_path": "items",
+    "display_fields": ["name"],
+    "copy_fields": ["id", "value"]
+  },
+  "items": [
+    { "id": 1, "name": "Item 1", "value": "abc" },
+    { "id": 2, "name": "Item 2", "value": "def" }
+  ]
+}
+```
+
+| Option | Description |
+|--------|-------------|
+| `array_path` | Path to the data array (e.g., `"items"` or `"data.results"`) |
+| `display_fields` | Fields to show in each row |
+| `copy_fields` | Fields available for copying (in order) |
+
 ## License
 
 MIT
