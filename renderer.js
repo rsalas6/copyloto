@@ -58,11 +58,12 @@ const itemPreview = document.getElementById('item-preview');
 const fieldsSettings = document.getElementById('fields-settings');
 const fieldsTableBody = document.getElementById('fields-table-body');
 const colorSettings = document.getElementById('color-settings');
-const colorFieldSelect = document.getElementById('color-field-select');
-const colorOperatorSelect = document.getElementById('color-operator-select');
-const colorValueInput = document.getElementById('color-value-input');
-const colorPicker = document.getElementById('color-picker');
+const colorRulesList = document.getElementById('color-rules-list');
+const btnAddColorRule = document.getElementById('btn-add-color-rule');
 const btnSaveSettings = document.getElementById('btn-save-settings');
+
+// Color rules state
+let colorRulesConfig = [];
 
 // Font size state
 let currentFontSize = 14;
@@ -214,7 +215,7 @@ async function showSettingsPanel() {
     colorSettings.style.display = 'block';
     initSettingsFieldsConfig();
     renderSettingsTable();
-    renderColorFieldSelector();
+    initColorRules();
     renderPreview();
   } else {
     previewSection.style.display = 'none';
@@ -268,9 +269,11 @@ function initSettingsFieldsConfig() {
 
   settingsFieldsConfig = {};
   fields.forEach((field) => {
+    const showOrder = displayFields.indexOf(field);
     const copyOrder = copyFields.indexOf(field);
     settingsFieldsConfig[field] = {
       show: displayFields.length === 0 || displayFields.includes(field),
+      showOrder: showOrder >= 0 ? showOrder + 1 : 0,
       copy: copyOrder >= 0,
       order: copyOrder >= 0 ? copyOrder + 1 : 0
     };
@@ -284,11 +287,12 @@ function renderSettingsTable() {
   const fields = Object.keys(items[0]);
 
   fieldsTableBody.innerHTML = fields.map(field => {
-    const fc = settingsFieldsConfig[field] || { show: true, copy: false, order: 0 };
+    const fc = settingsFieldsConfig[field] || { show: true, showOrder: 0, copy: false, order: 0 };
     return `
       <tr data-field="${field}">
         <td class="field-name">${field}</td>
         <td><input type="checkbox" class="show-check" ${fc.show ? 'checked' : ''}></td>
+        <td><input type="number" class="show-order-input" min="0" max="99" value="${fc.showOrder}" readonly></td>
         <td><input type="checkbox" class="copy-check" ${fc.copy ? 'checked' : ''}></td>
         <td><input type="number" class="order-input" min="0" max="99" value="${fc.order}" readonly></td>
       </tr>
@@ -299,28 +303,43 @@ function renderSettingsTable() {
   fieldsTableBody.querySelectorAll('tr').forEach(row => {
     const field = row.dataset.field;
     const showCheck = row.querySelector('.show-check');
+    const showOrderInput = row.querySelector('.show-order-input');
     const copyCheck = row.querySelector('.copy-check');
     const orderInput = row.querySelector('.order-input');
 
     showCheck.addEventListener('change', () => {
-      settingsFieldsConfig[field].show = showCheck.checked;
+      if (showCheck.checked) {
+        const maxShowOrder = Math.max(0, ...Object.values(settingsFieldsConfig).map(fc => fc.showOrder));
+        settingsFieldsConfig[field].show = true;
+        settingsFieldsConfig[field].showOrder = maxShowOrder + 1;
+        showOrderInput.value = maxShowOrder + 1;
+      } else {
+        const removedOrder = settingsFieldsConfig[field].showOrder;
+        settingsFieldsConfig[field].show = false;
+        settingsFieldsConfig[field].showOrder = 0;
+        showOrderInput.value = 0;
+
+        Object.keys(settingsFieldsConfig).forEach(f => {
+          if (settingsFieldsConfig[f].showOrder > removedOrder) {
+            settingsFieldsConfig[f].showOrder--;
+          }
+        });
+        updateSettingsOrderInputs();
+      }
     });
 
     copyCheck.addEventListener('change', () => {
       if (copyCheck.checked) {
-        // Assign next order number automatically
         const maxOrder = Math.max(0, ...Object.values(settingsFieldsConfig).map(fc => fc.order));
         settingsFieldsConfig[field].copy = true;
         settingsFieldsConfig[field].order = maxOrder + 1;
         orderInput.value = maxOrder + 1;
       } else {
-        // Remove and reorder remaining
         const removedOrder = settingsFieldsConfig[field].order;
         settingsFieldsConfig[field].copy = false;
         settingsFieldsConfig[field].order = 0;
         orderInput.value = 0;
 
-        // Reorder others
         Object.keys(settingsFieldsConfig).forEach(f => {
           if (settingsFieldsConfig[f].order > removedOrder) {
             settingsFieldsConfig[f].order--;
@@ -335,31 +354,98 @@ function renderSettingsTable() {
 function updateSettingsOrderInputs() {
   fieldsTableBody.querySelectorAll('tr').forEach(row => {
     const field = row.dataset.field;
+    const showOrderInput = row.querySelector('.show-order-input');
     const orderInput = row.querySelector('.order-input');
+    showOrderInput.value = settingsFieldsConfig[field].showOrder;
     orderInput.value = settingsFieldsConfig[field].order;
   });
 }
 
-function renderColorFieldSelector() {
+function initColorRules() {
   const { items, config } = currentState;
   if (items.length === 0) return;
 
-  const fields = Object.keys(items[0]);
-  const currentColorField = config.color_field || '';
+  // Convert old format to new format if needed
+  if (config.color_rules && Array.isArray(config.color_rules)) {
+    colorRulesConfig = [...config.color_rules];
+  } else if (config.color_field) {
+    // Legacy single rule
+    colorRulesConfig = [{
+      field: config.color_field,
+      operator: config.color_operator || '==',
+      value: config.color_value || '',
+      color: config.color_hex || '#ff6b6b'
+    }];
+  } else {
+    colorRulesConfig = [];
+  }
 
-  colorFieldSelect.innerHTML = `<option value="">-- Off --</option>` +
-    fields.map(field =>
-      `<option value="${field}" ${field === currentColorField ? 'selected' : ''}>${field}</option>`
-    ).join('');
-
-  colorOperatorSelect.value = config.color_operator || '==';
-  colorValueInput.value = config.color_value || '';
-  colorPicker.value = config.color_hex || '#ff6b6b';
+  renderColorRules();
 }
+
+function renderColorRules() {
+  const { items } = currentState;
+  if (items.length === 0) return;
+
+  const fields = Object.keys(items[0]);
+
+  colorRulesList.innerHTML = colorRulesConfig.map((rule, idx) => `
+    <div class="color-rule" data-index="${idx}">
+      <select class="rule-field">
+        ${fields.map(f => `<option value="${f}" ${f === rule.field ? 'selected' : ''}>${f}</option>`).join('')}
+      </select>
+      <select class="rule-operator">
+        <option value="==" ${rule.operator === '==' ? 'selected' : ''}>=</option>
+        <option value="!=" ${rule.operator === '!=' ? 'selected' : ''}>≠</option>
+        <option value="contains" ${rule.operator === 'contains' ? 'selected' : ''}>has</option>
+      </select>
+      <input type="text" class="rule-value" value="${escapeHtml(rule.value || '')}" placeholder="value">
+      <input type="color" class="rule-color" value="${rule.color || '#ff6b6b'}">
+      <button class="btn-remove-rule">×</button>
+    </div>
+  `).join('');
+
+  // Event listeners for each rule
+  colorRulesList.querySelectorAll('.color-rule').forEach(ruleEl => {
+    const idx = parseInt(ruleEl.dataset.index);
+
+    ruleEl.querySelector('.rule-field').addEventListener('change', (e) => {
+      colorRulesConfig[idx].field = e.target.value;
+    });
+    ruleEl.querySelector('.rule-operator').addEventListener('change', (e) => {
+      colorRulesConfig[idx].operator = e.target.value;
+    });
+    ruleEl.querySelector('.rule-value').addEventListener('input', (e) => {
+      colorRulesConfig[idx].value = e.target.value;
+    });
+    ruleEl.querySelector('.rule-color').addEventListener('input', (e) => {
+      colorRulesConfig[idx].color = e.target.value;
+    });
+    ruleEl.querySelector('.btn-remove-rule').addEventListener('click', () => {
+      colorRulesConfig.splice(idx, 1);
+      renderColorRules();
+    });
+  });
+}
+
+btnAddColorRule.addEventListener('click', () => {
+  const { items } = currentState;
+  if (items.length === 0) return;
+
+  const fields = Object.keys(items[0]);
+  colorRulesConfig.push({
+    field: fields[0],
+    operator: '==',
+    value: '',
+    color: '#ff6b6b'
+  });
+  renderColorRules();
+});
 
 async function saveSettingsConfig() {
   const displayFields = Object.entries(settingsFieldsConfig)
-    .filter(([_, fc]) => fc.show)
+    .filter(([_, fc]) => fc.show && fc.showOrder > 0)
+    .sort((a, b) => a[1].showOrder - b[1].showOrder)
     .map(([field]) => field);
 
   const copyFields = Object.entries(settingsFieldsConfig)
@@ -367,14 +453,14 @@ async function saveSettingsConfig() {
     .sort((a, b) => a[1].order - b[1].order)
     .map(([field]) => field);
 
+  // Filter out empty rules
+  const validColorRules = colorRulesConfig.filter(r => r.field && r.value);
+
   const newConfig = {
     display_fields: displayFields,
     copy_fields: copyFields,
     auto_advance: autoAdvanceCheck.checked,
-    color_field: colorFieldSelect.value || null,
-    color_operator: colorOperatorSelect.value || '==',
-    color_value: colorValueInput.value.trim(),
-    color_hex: colorPicker.value
+    color_rules: validColorRules
   };
 
   await ipcRenderer.invoke('update-config', newConfig);
@@ -400,6 +486,7 @@ function updateFieldsForArray(arrayInfo) {
   fields.forEach((field, idx) => {
     modalFieldsConfig[field] = {
       show: true,
+      showOrder: idx + 1,
       copy: idx === 0,
       order: idx === 0 ? 1 : 0
     };
@@ -411,6 +498,7 @@ function updateFieldsForArray(arrayInfo) {
       <tr data-field="${field}">
         <td class="field-name">${field}</td>
         <td><input type="checkbox" class="show-check" ${fc.show ? 'checked' : ''}></td>
+        <td><input type="number" class="show-order-input" min="0" max="99" value="${fc.showOrder}" readonly></td>
         <td><input type="checkbox" class="copy-check" ${fc.copy ? 'checked' : ''}></td>
         <td><input type="number" class="order-input" min="0" max="99" value="${fc.order}" readonly></td>
       </tr>
@@ -420,28 +508,43 @@ function updateFieldsForArray(arrayInfo) {
   modalFieldsTableBody.querySelectorAll('tr').forEach(row => {
     const field = row.dataset.field;
     const showCheck = row.querySelector('.show-check');
+    const showOrderInput = row.querySelector('.show-order-input');
     const copyCheck = row.querySelector('.copy-check');
     const orderInput = row.querySelector('.order-input');
 
     showCheck.addEventListener('change', () => {
-      modalFieldsConfig[field].show = showCheck.checked;
+      if (showCheck.checked) {
+        const maxShowOrder = Math.max(0, ...Object.values(modalFieldsConfig).map(fc => fc.showOrder));
+        modalFieldsConfig[field].show = true;
+        modalFieldsConfig[field].showOrder = maxShowOrder + 1;
+        showOrderInput.value = maxShowOrder + 1;
+      } else {
+        const removedOrder = modalFieldsConfig[field].showOrder;
+        modalFieldsConfig[field].show = false;
+        modalFieldsConfig[field].showOrder = 0;
+        showOrderInput.value = 0;
+
+        Object.keys(modalFieldsConfig).forEach(f => {
+          if (modalFieldsConfig[f].showOrder > removedOrder) {
+            modalFieldsConfig[f].showOrder--;
+          }
+        });
+        updateModalOrderInputs();
+      }
     });
 
     copyCheck.addEventListener('change', () => {
       if (copyCheck.checked) {
-        // Assign next order number automatically
         const maxOrder = Math.max(0, ...Object.values(modalFieldsConfig).map(fc => fc.order));
         modalFieldsConfig[field].copy = true;
         modalFieldsConfig[field].order = maxOrder + 1;
         orderInput.value = maxOrder + 1;
       } else {
-        // Remove and reorder remaining
         const removedOrder = modalFieldsConfig[field].order;
         modalFieldsConfig[field].copy = false;
         modalFieldsConfig[field].order = 0;
         orderInput.value = 0;
 
-        // Reorder others
         Object.keys(modalFieldsConfig).forEach(f => {
           if (modalFieldsConfig[f].order > removedOrder) {
             modalFieldsConfig[f].order--;
@@ -456,7 +559,9 @@ function updateFieldsForArray(arrayInfo) {
 function updateModalOrderInputs() {
   modalFieldsTableBody.querySelectorAll('tr').forEach(row => {
     const field = row.dataset.field;
+    const showOrderInput = row.querySelector('.show-order-input');
     const orderInput = row.querySelector('.order-input');
+    showOrderInput.value = modalFieldsConfig[field].showOrder;
     orderInput.value = modalFieldsConfig[field].order;
   });
 }
@@ -472,7 +577,8 @@ btnApplyConfig.addEventListener('click', async () => {
   const selectedArray = arraySelect.value;
 
   const displayFields = Object.entries(modalFieldsConfig)
-    .filter(([_, fc]) => fc.show)
+    .filter(([_, fc]) => fc.show && fc.showOrder > 0)
+    .sort((a, b) => a[1].showOrder - b[1].showOrder)
     .map(([field]) => field);
 
   const copyFields = Object.entries(modalFieldsConfig)
@@ -566,15 +672,39 @@ function renderCopyIndicator() {
   }
 }
 
+function checkColorRules(item, colorRules) {
+  for (const rule of colorRules) {
+    if (!rule.field || !rule.value) continue;
+
+    const itemValue = item[rule.field];
+    const itemStr = String(itemValue || '');
+    const ruleValue = rule.value;
+
+    let matches = false;
+    switch (rule.operator) {
+      case '==':
+        matches = itemStr === ruleValue || itemStr.toLowerCase() === ruleValue.toLowerCase();
+        break;
+      case '!=':
+        matches = itemStr !== ruleValue && itemStr.toLowerCase() !== ruleValue.toLowerCase();
+        break;
+      case 'contains':
+        matches = itemStr.toLowerCase().includes(ruleValue.toLowerCase());
+        break;
+    }
+
+    if (matches) {
+      return rule.color || '#ff6b6b';
+    }
+  }
+  return null;
+}
+
 function renderItemsList() {
   const { currentIndex, copyFieldIndex, items, config } = currentState;
   const displayFields = config.display_fields || [];
   const copyFields = config.copy_fields || (config.copy_field ? [config.copy_field] : []);
-
-  const colorField = config.color_field;
-  const colorOperator = config.color_operator || '==';
-  const colorValue = config.color_value;
-  const colorHex = config.color_hex || '#ff6b6b';
+  const colorRules = config.color_rules || [];
 
   let html = '';
 
@@ -586,31 +716,9 @@ function renderItemsList() {
     else if (i === currentIndex) rowClass += ' current';
     else rowClass += ' future';
 
-    // Color rule check
-    let rowStyle = '';
-    if (colorField && colorValue !== undefined && colorValue !== '') {
-      const itemValue = item[colorField];
-      const itemStr = String(itemValue);
-      const numItem = parseFloat(itemValue);
-      const numCompare = parseFloat(colorValue);
-
-      let matches = false;
-      switch (colorOperator) {
-        case '==':
-          matches = itemStr === colorValue || itemStr.toLowerCase() === colorValue.toLowerCase();
-          break;
-        case '!=':
-          matches = itemStr !== colorValue && itemStr.toLowerCase() !== colorValue.toLowerCase();
-          break;
-        case 'contains':
-          matches = itemStr.toLowerCase().includes(colorValue.toLowerCase());
-          break;
-      }
-
-      if (matches) {
-        rowStyle = `style="border-left: 3px solid ${colorHex}; background: ${colorHex}15;"`;
-      }
-    }
+    // Check color rules - apply to index box
+    const matchedColor = checkColorRules(item, colorRules);
+    const indexStyle = matchedColor ? `style="background: ${matchedColor}; color: white;"` : '';
 
     // Principal field (first display field)
     const fieldsToShow = displayFields.length > 0 ? displayFields : Object.keys(item).slice(0, 3);
@@ -624,7 +732,7 @@ function renderItemsList() {
         const field = fieldsToShow[j];
         const value = item[field];
         if (value !== null && value !== undefined) {
-          secondaryHtml += `<span class="item-field">${truncate(String(value), 30)}</span>`;
+          secondaryHtml += `<span class="item-field">${escapeHtml(String(value))}</span>`;
         }
       }
       secondaryHtml += `</div>`;
@@ -648,10 +756,11 @@ function renderItemsList() {
     }
 
     html += `
-      <div class="${rowClass}" data-index="${i}" ${rowStyle}>
-        <div class="item-index">#${i + 1}</div>
+      <div class="${rowClass}" data-index="${i}">
+        <div class="item-index" ${indexStyle}>#${i + 1}</div>
         <div class="item-content">
-          <div class="item-principal">${escapeHtml(truncate(String(principalValue), 50))}</div>
+          <div class="item-principal">${escapeHtml(String(principalValue))}</div>
+          ${secondaryHtml}
           ${copyBoxesHtml}
         </div>
       </div>

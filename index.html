@@ -95,15 +95,16 @@
         </div>
 
         <div class="modal-section">
-          <label>Fields (Show | Copy | Order):</label>
+          <label>Fields (View | Copy):</label>
           <div class="fields-table-container">
             <table class="fields-table" id="modal-fields-table">
               <thead>
                 <tr>
                   <th>Field</th>
-                  <th>Show</th>
+                  <th>View</th>
+                  <th>V#</th>
                   <th>Copy</th>
-                  <th>#</th>
+                  <th>C#</th>
                 </tr>
               </thead>
               <tbody id="modal-fields-table-body">
@@ -167,15 +168,16 @@
         </div>
 
         <div class="settings-section" id="fields-settings" style="display: none;">
-          <label>Fields (Show | Copy):</label>
+          <label>Fields (View | Copy):</label>
           <div class="fields-table-container">
             <table class="fields-table" id="fields-table">
               <thead>
                 <tr>
                   <th>Field</th>
-                  <th>Show</th>
+                  <th>View</th>
+                  <th>V#</th>
                   <th>Copy</th>
-                  <th>#</th>
+                  <th>C#</th>
                 </tr>
               </thead>
               <tbody id="fields-table-body">
@@ -185,19 +187,9 @@
         </div>
 
         <div class="settings-section" id="color-settings" style="display: none;">
-          <label>Highlight when:</label>
-          <div class="color-config">
-            <select id="color-field-select">
-              <option value="">-- Off --</option>
-            </select>
-            <select id="color-operator-select">
-              <option value="==">=</option>
-              <option value="!=">≠</option>
-              <option value="contains">has</option>
-            </select>
-            <input type="text" id="color-value-input" placeholder="value">
-            <input type="color" id="color-picker" value="#ff6b6b">
-          </div>
+          <label>Highlight rules:</label>
+          <div id="color-rules-list"></div>
+          <button id="btn-add-color-rule" class="btn-small">+ Add rule</button>
         </div>
 
         <div class="settings-actions">
